@@ -19,8 +19,8 @@
         }
     }
     $: if(location) { smsBody = `&body=Please keep this location: ${location}\n`; }
-    $: phoneNumber1Link = `sms:/${PUBLIC_PHONE_NUMBER_1.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
-    $: phoneNumber2Link = `sms:/${PUBLIC_PHONE_NUMBER_2.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
+    $: phoneNumber1Link = `sms:${PUBLIC_PHONE_NUMBER_1.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
+    $: phoneNumber2Link = `sms:${PUBLIC_PHONE_NUMBER_2.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
 </script>
 
 <div class="content">
