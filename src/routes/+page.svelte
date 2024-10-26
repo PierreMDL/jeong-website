@@ -2,14 +2,14 @@
     import { PUBLIC_PHONE_NUMBER_1, PUBLIC_PHONE_NUMBER_2 } from '$env/static/public';
 
     let locating = false;
-    let location: string;
+    let location: [number, number];
     let smsBody: string;
     function getLocation() {
         if (navigator.geolocation) {
             locating = true;
             navigator.geolocation.watchPosition(
                 function(currentPosition) {
-                    location = `long: ${currentPosition.coords.longitude}, lat: ${currentPosition.coords.latitude}`;
+                    location = [currentPosition.coords.longitude, currentPosition.coords.latitude];
                     locating = false;
                 },
                 function(error) {
@@ -18,7 +18,7 @@
             );
         }
     }
-    $: if(location) { smsBody = `&body=Please keep this location: ${location}\n`; }
+    $: if(location) { smsBody = encodeURI(`?&body=Please keep this location:\nlong: ${location[0]}\nlat: ${location[1]}\n`); }
     $: phoneNumber1Link = `sms:${PUBLIC_PHONE_NUMBER_1.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
     $: phoneNumber2Link = `sms:${PUBLIC_PHONE_NUMBER_2.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
 </script>
