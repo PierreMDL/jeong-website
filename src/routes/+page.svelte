@@ -1,13 +1,21 @@
 <script lang="ts">
     import { PUBLIC_PHONE_NUMBER_1, PUBLIC_PHONE_NUMBER_2 } from '$env/static/public';
 
+    let locating = false;
     let location: string;
     let smsBody: string;
     function getLocation() {
         if (navigator.geolocation) {
-            navigator.geolocation.watchPosition((currentPosition) => {
-                location = `long: ${currentPosition.coords.longitude}, lat: ${currentPosition.coords.latitude}`;
-            });
+            locating = true;
+            navigator.geolocation.watchPosition(
+                function(currentPosition) {
+                    location = `long: ${currentPosition.coords.longitude}, lat: ${currentPosition.coords.latitude}`;
+                    locating = false;
+                },
+                function(error) {
+                    locating = false;
+                }
+            );
         }
     }
     $: if(location) { smsBody = `&body=Please keep this location: ${location}\n`; }
@@ -40,10 +48,29 @@
 
     <!-- Contact -->
     <section id="contact">
-        <p>If anything seems off, please <button on:click={getLocation}>tap here</button> to get your GPS location and contact my caretakers at either of these numbers:</p>
+        <p>If anything seems off, please <button on:click={getLocation}>tap here</button> to get your location and contact my caretakers at either of these numbers:</p>
         <ul>
-            <li><a href="{phoneNumber1Link}">{PUBLIC_PHONE_NUMBER_1}</a></li>
-            <li><a href="{phoneNumber2Link}">{PUBLIC_PHONE_NUMBER_2}</a></li>
+            <li>
+                <a href="{phoneNumber1Link}">{PUBLIC_PHONE_NUMBER_1}</a>
+                {#if locating}
+                <img
+                    class="spinning"
+                    height="15em"
+                    src="/arrow-rotate-clockwise-svgrepo-com.svg"
+                    alt="A clockwise revolving arrow circling around a point"
+                />
+                {/if}            </li>
+            <li>
+                <a href="{phoneNumber2Link}">{PUBLIC_PHONE_NUMBER_2}</a>
+                {#if locating}
+                <img
+                    class="spinning"
+                    height="15em"
+                    src="/arrow-rotate-clockwise-svgrepo-com.svg"
+                    alt="A clockwise revolving arrow circling around a point"
+                />
+                {/if}
+            </li>
         </ul>
         <p>If you're a neighbour and I visit you regularly, they would like to hear from you!</p>
     </section>
@@ -103,5 +130,14 @@ section {
     */
     /* pointer-events: none;  */
     width: 90%;
+}
+
+@keyframes rotation {
+    from {transform: rotate(0deg);}
+    to {transform: rotate(359deg);}
+}
+.spinning {
+    display: inline-block;
+    animation: rotation .6s infinite linear;
 }
 </style>
