@@ -1,26 +1,62 @@
 <script lang="ts">
     import { PUBLIC_PHONE_NUMBER_1, PUBLIC_PHONE_NUMBER_2 } from '$env/static/public';
+	import { onMount } from 'svelte';
+	import type { PageData } from './$types';
 
+    export let data: PageData;
+
+    let message: string;
     let locating = false;
-    let location: [number, number];
+    let longitude: number;
+    let latitude: number;
     let smsBody: string;
-    function getLocation() {
+    let lastSentLongLat: [number, number];
+
+    onMount(async () => {
         if (navigator.geolocation) {
             locating = true;
-            navigator.geolocation.watchPosition(
+            void navigator.geolocation.watchPosition(
                 function(currentPosition) {
-                    location = [currentPosition.coords.longitude, currentPosition.coords.latitude];
+                    longitude = currentPosition.coords.longitude;
+                    latitude = currentPosition.coords.latitude;
                     locating = false;
+                    sendMessage();
                 },
                 function(error) {
+                    console.log(error);
                     locating = false;
+                },
+                {
+                    enableHighAccuracy: true
                 }
             );
         }
+    });
+
+    async function sendMessage(): Promise<void> {
+        fetch('/message', {
+            method: 'POST',
+            body: JSON.stringify({
+                sessionId: data.sessionId,
+                long: longitude,
+                lat: latitude,
+                tagNumber: data.tagNumber,
+                message: message
+            })
+        });
     }
-    $: if(location) { smsBody = encodeURI(`?&body=Please keep this location:\nlong: ${location[0]}\nlat: ${location[1]}\n`); }
-    $: phoneNumber1Link = `sms:${PUBLIC_PHONE_NUMBER_1.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
-    $: phoneNumber2Link = `sms:${PUBLIC_PHONE_NUMBER_2.replaceAll(' ', '')}${smsBody ? smsBody : ''}`;
+
+    $: if(longitude && latitude) { smsBody = encodeURI(`?&body=Please keep this location:\nlong: ${longitude}\nlat: ${latitude}\n`); }
+    $: phoneNumber1 = {
+        formatted: PUBLIC_PHONE_NUMBER_1,
+        tel: `tel:${PUBLIC_PHONE_NUMBER_1.replaceAll(' ', '')}`,
+        sms: `sms:${PUBLIC_PHONE_NUMBER_1.replaceAll(' ', '')}${smsBody ? smsBody : ''}`
+    }
+    $: phoneNumber2 = {
+        formatted: PUBLIC_PHONE_NUMBER_2,
+        tel: `tel:${PUBLIC_PHONE_NUMBER_2.replaceAll(' ', '')}`,
+        sms: `sms:${PUBLIC_PHONE_NUMBER_2.replaceAll(' ', '')}${smsBody ? smsBody : ''}`
+    }
 </script>
 
 <div class="content">
@@ -36,42 +72,53 @@
         <p>Right now I'm not lost, just roaming around. I'm generally around this area:</p>
         <iframe
             class="embedded-map"
+            loading="lazy"
             allow="geolocation"
-            frameborder="0"
-            scrolling="yes"
-            marginheight="0"
-            marginwidth="0"
             title="Borgarvefsjá"
             src="https://borgarvefsja.reykjavik.is/borgarvefsja/?x=357555.0&y=408196.8&z=4&gId=1729353065358"
         ></iframe>
+        <!-- TODO -->
+        <p>Did you spot me? Send my position so my caretakers know my area better!</p>
+        <button on:click={sendMessage} disabled={lastSentLongLat && (lastSentLongLat[0] === longitude && lastSentLongLat[1] === latitude)}>
+            Turn on GPS and click here
+            {#if locating}
+            <img
+                class="spinning"
+                height="15em"
+                src="/arrow-rotate-clockwise-svgrepo-com.svg"
+                alt="An arrow circling clockwise around a point"
+            />
+            {/if}
+        </button>
     </section>
 
     <!-- Contact -->
     <section id="contact">
-        <p>If anything seems off, please <button on:click={getLocation}>tap here</button> to get your location and contact my caretakers at either of these numbers:</p>
-        <ul>
-            <li>
-                <a href="{phoneNumber1Link}">{PUBLIC_PHONE_NUMBER_1}</a>
-                {#if locating}
-                <img
-                    class="spinning"
-                    height="15em"
-                    src="/arrow-rotate-clockwise-svgrepo-com.svg"
-                    alt="A clockwise revolving arrow circling around a point"
-                />
-                {/if}            </li>
-            <li>
-                <a href="{phoneNumber2Link}">{PUBLIC_PHONE_NUMBER_2}</a>
-                {#if locating}
-                <img
-                    class="spinning"
-                    height="15em"
-                    src="/arrow-rotate-clockwise-svgrepo-com.svg"
-                    alt="A clockwise revolving arrow circling around a point"
-                />
-                {/if}
-            </li>
-        </ul>
+        <div>
+            <p>If anything seems off, please contact my caretakers at either of these numbers:</p>
+            <ul>
+                <li>
+                    <a href="{phoneNumber1.tel}">{phoneNumber1.formatted}</a> <button on:click={() => location.href = phoneNumber1.sms}>SMS</button>
+                </li>
+                <li>
+                    <a href="{phoneNumber2.tel}">{phoneNumber2.formatted}</a> <button on:click={() => location.href = phoneNumber2.sms}>SMS</button>
+                </li>
+            </ul>
+        </div>
+        <div>
+            <!-- <p>You can also send them a message:</p> -->
+            <label for="message-area">You can also send them a message:</label>
+            <br/>
+            <textarea
+                id="message-area"
+                placeholder="Your message here"
+                bind:value={message}
+                style="width: 100%"
+                rows="15"
+            ></textarea>
+            <br/>
+            <button disabled={!message} on:click={sendMessage}>Send</button>
+        </div>
         <p>If you're a neighbour and I visit you regularly, they would like to hear from you!</p>
     </section>
 </div>
@@ -129,7 +176,7 @@ section {
     But that disables iframe pointer capture entirely.
     */
     /* pointer-events: none;  */
-    width: 90%;
+    /* width: 90%; */
 }
 
 @keyframes rotation {
