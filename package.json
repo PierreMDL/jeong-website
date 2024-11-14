@@ -31,6 +31,7 @@
 	"type": "module",
 	"packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447",
 	"dependencies": {
+		"@sveltejs/adapter-vercel": "^5.4.7",
 		"@vercel/postgres": "^0.10.0",
 		"uuid": "^11.0.3",
 		"vercel": "^37.14.0"
